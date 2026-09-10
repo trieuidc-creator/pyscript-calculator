@@ -55,7 +55,7 @@ function processMailMerge() {
 function formatVND(value) {
     if (!value || value === "...") return "...";
     // Loại bỏ dấu chấm, dấu phẩy hoặc chữ nếu người dùng lỡ nhập trong Excel
-    const cleanNumber = String(value).replace(/[^0-9.-]/g, '');
+    const cleanNumber = string(value).replace(/[^0-9.-]/g, '');
     const number = parseFloat(cleanNumber);
     
     if (isNaN(number)) return value; // Nếu không phải là số thì giữ nguyên
