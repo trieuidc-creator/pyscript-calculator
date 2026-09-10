@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tạo Thư Hàng Loạt (Mail Merge PDF)</title>
+    <title>Thông Báo Đề Nghị Thanh Toán Tiền Thuê Nhà</title>
     <!-- Thư viện đọc file Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Thư viện tạo file PDF -->
@@ -24,7 +24,7 @@
 <body>
 
 <div class="container">
-    <h2>Mail Merge - Tạo Thư PDF Hàng Loạt</h2>
+    <h2>Mail Merge - Tạo Thông Báo PDF Hàng Loạt</h2>
     <p>Tải lên file Excel có cột <b>HoTen</b> và <b>DiaChi</b> để xuất file PDF.</p>
     
     <div class="form-group">
@@ -62,6 +62,10 @@ function processMailMerge() {
             return;
         }
 
+        // Lấy ngày tháng năm hiện tại
+        const today = new Date();
+        const ngayThangNam = `Thành phố Hồ Chí Minh, ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm ${today.getFullYear()}`;
+
         // Định nghĩa nội dung tài liệu PDF chứa tất cả thư
         const docDefinition = {
             content: []
@@ -71,13 +75,44 @@ function processMailMerge() {
             const hoTen = customer.HoTen || "Khách hàng";
             const diaChi = customer.DiaChi || "Chưa cập nhật";
 
-            // Thêm mẫu thư cho từng khách hàng
+            // Cấu trúc thông báo cho từng khách hàng
             docDefinition.content.push(
-                { text: 'THƯ MỜI TRÂN TRỌNG', style: 'header' },
-                { text: `Kính gửi: ${hoTen}`, style: 'subHeader' },
-                { text: `Địa chỉ: ${diaChi}\n\n` },
-                { text: `Chúng tôi xin trân trọng kính mời ông/bà ${hoTen} tham dự sự kiện tri ân khách hàng thân thiết vào cuối tháng này.\n\n` },
-                { text: 'Trân trọng,\nBan Tổ Chức', alignment: 'right' }
+                // Header: Thông tin đơn vị gửi
+                { text: 'BECAMEX GROUP\nBAN THƯƠNG MẠI', style: 'senderTitle' },
+                { text: 'Địa chỉ: Tòa nhà mPlaza Saigon, 39 Lê Duẩn, P. Sài Gòn, TP. Hồ Chí Minh\nĐiện thoại: 02743811666\n\n', style: 'senderInfo' },
+                
+                // Ngày tháng năm (góc phải)
+                { text: ngayThangNam + '\n\n', style: 'dateStyle' },
+
+                // Tiêu đề thông báo
+                { text: 'THÔNG BÁO ĐỀ NGHỊ THANH TOÁN TIỀN THUÊ NHÀ', style: 'header' },
+
+                // Thông tin người nhận
+                { text: `Kính gửi: Ông/Bà ${hoTen}`, style: 'subHeader' },
+                { text: `Địa chỉ căn hộ: ${diaChi}\n\n` },
+
+                // Nội dung thông báo
+                { 
+                    text: 'Căn cứ Hợp đồng cho thuê căn hộ NOXH, Ban thương mại thuộc Tập Đoàn Becamex thông báo đến Quý khách hàng về việc thanh toán tiền thuê căn hộ, tiền sử dụng điện, nước, tiền thu gom xử lý rác của căn hộ thuê như sau:\n\n',
+                    alignment: 'justify'
+                },
+
+                // Lời cảm ơn / Đề nghị
+                { text: 'Rất mong Quý khách hàng hoàn tất thanh toán đúng thời hạn theo quy định.\n\n\n' },
+
+                // Phần chữ ký
+                {
+                    columns: [
+                        { text: '' }, // Ô trống bên trái
+                        {
+                            stack: [
+                                { text: 'BAN THƯƠNG MẠI', bold: true, alignment: 'center' },
+                                { text: '\n\n\n' }, // Khoảng trống ký tên
+                                { text: 'Nguyễn Quang Triệu', bold: true, alignment: 'center' }
+                            ]
+                        }
+                    ]
+                }
             );
 
             // Ngắt trang giữa các thư (trừ thư cuối cùng)
@@ -86,15 +121,18 @@ function processMailMerge() {
             }
         });
 
-        // Định kiểu văn bản
+        // Định kiểu văn bản (Styles)
         docDefinition.styles = {
-            header: { fontSize: 18, bold: true, alignment: 'center', margin: [0, 0, 0, 20] },
-            subHeader: { fontSize: 14, bold: true, margin: [0, 0, 0, 10] }
+            senderTitle: { fontSize: 11, bold: true },
+            senderInfo: { fontSize: 9.5, italic: true },
+            dateStyle: { fontSize: 10, italic: true, alignment: 'right' },
+            header: { fontSize: 15, bold: true, alignment: 'center', margin: [0, 10, 0, 15] },
+            subHeader: { fontSize: 12, bold: true, margin: [0, 0, 0, 5] }
         };
 
         // Tạo file PDF và tải về
-        pdfMake.createPdf(docDefinition).download('Danh_Sach_Thu_Moi.pdf');
-        statusDiv.innerText = `Đã xuất thành công ${customers.length} thư!`;
+        pdfMake.createPdf(docDefinition).download('Thong_Bao_Thanh_Toan_Tien_Nha.pdf');
+        statusDiv.innerText = `Đã xuất thành công ${customers.length} thông báo!`;
     };
 
     reader.readAsArrayBuffer(file);
