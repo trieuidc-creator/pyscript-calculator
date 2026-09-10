@@ -51,7 +51,19 @@ function processMailMerge() {
         alert('Vui lòng chọn file Excel trước!');
         return;
     }
-
+// Hàm chuyển đổi số/chuỗi số thành dạng tiền tệ Việt Nam (VD: 2500000 -> 2.500.000)
+function formatVND(value) {
+    if (!value || value === "...") return "...";
+    // Loại bỏ dấu chấm, dấu phẩy hoặc chữ nếu người dùng lỡ nhập trong Excel
+    const cleanNumber = String(value).replace(/[^0-9.-]/g, '');
+    const number = parseFloat(cleanNumber);
+    
+    if (isNaN(number)) return value; // Nếu không phải là số thì giữ nguyên
+    
+    // Format theo chuẩn vi-VN (phân cách hàng nghìn bằng dấu chấm)
+    return new Intl.NumberFormat('vi-VN').format(number);
+}
+        
     statusDiv.innerText = "Đang xử lý dữ liệu...";
     const file = fileInput.files[0];
     const reader = new FileReader();
@@ -98,6 +110,13 @@ function processMailMerge() {
             const so_tien_bang_chu = c.so_tien_bang_chu || "...";
             const ma_khach_hang = c.ma_khach_hang || "...";
 
+            const tien_nha = formatVND(c.tien_nha);
+            const tien_dien = formatVND(c.tien_dien);
+            const tien_nuoc = formatVND(c.tien_nuoc);
+            const tien_rac = formatVND(c.tien_rac);
+            const tien_con_lai = formatVND(c.tien_con_lai);
+            const tien_tong = formatVND(c.tien_tong);
+            
             // Cấu trúc nội dung PDF
             docDefinition.content.push(
                 // Header Đơn vị
@@ -161,7 +180,7 @@ function processMailMerge() {
                 { text: 'Trân trọng,\n\n\n\n\n\n', style: 'bodyText' },
 
                 // Chữ ký
-                { text: '_______________________n', bold: false, style: 'bodyText' },
+                { text: '_______________________', bold: false, style: 'bodyText' },
                 { text: 'Nguyễn Quang Triệu\n', bold: true, style: 'bodyText' },
                 { text: 'Phó Giám đốc Ban thương mại', bold: true, style: 'bodyText' },
             );
