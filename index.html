@@ -9,7 +9,7 @@
     <!-- Thư viện tạo file PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-    
+
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f9; }
         .container { max-width: 650px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -18,7 +18,9 @@
         input[type="file"] { border: 1px solid #ccc; padding: 8px; width: 100%; box-sizing: border-box; }
         button { background-color: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
         button:hover { background-color: #218838; }
-        #status { margin-top: 15px; font-weight: bold; color: #007bff; text-align: center; }
+        button:disabled { background-color: #9bc9a8; cursor: not-allowed; }
+        #status { margin-top: 15px; font-weight: bold; color: #007bff; text-align: center; white-space: pre-line; }
+        #status.error { color: #dc3545; }
         .note { font-size: 13px; color: #555; background: #eef2f5; padding: 10px; border-left: 4px solid #007bff; margin-bottom: 15px; }
     </style>
 </head>
@@ -26,7 +28,7 @@
 
 <div class="container">
     <h2>Mail Merge - Thông Báo Đề Nghị Thanh Toán</h2>
-    
+
     <div class="note">
         <b>Tên các cột cần có trong file Excel (chính xác theo mã):</b><br>
         <code>ho_ten</code>, <code>dia_chi</code>, <code>can_ho</code>, <code>hop_dong</code>, <code>ngay_ky</code>, <code>ky_tien_nha</code>, <code>tien_nha</code>, <code>ky_tien_dien</code>, <code>tien_dien</code>, <code>ky_tien_nuoc</code>, <code>tien_nuoc</code>, <code>ky_tien_rac</code>, <code>tien_rac</code>, <code>tien_con_lai</code>, <code>tien_tong</code>, <code>so_tien_bang_chu</code>, <code>ma_khach_hang</code>
@@ -37,175 +39,206 @@
         <input type="file" id="excelFile" accept=".xlsx, .xls, .csv">
     </div>
 
-    <button onclick="processMailMerge()">Tạo và Tải File PDF</button>
+    <button id="submitBtn" onclick="processMailMerge()">Tạo và Tải File PDF</button>
 
     <div id="status"></div>
 </div>
 
 <script>
+// Hàm chuyển đổi số/chuỗi số thành dạng tiền tệ Việt Nam (VD: 2500000 -> 2.500.000)
+// Trả về "..." chỉ khi ô trống/không có dữ liệu (không coi số 0 là "trống")
+function formatVND(value) {
+    if (value === undefined || value === null || value === "") return "...";
+
+    // Loại bỏ ký tự không phải số, dấu chấm, dấu trừ (phòng trường hợp người dùng lỡ nhập có dấu phân cách)
+    const cleanNumber = String(value).replace(/[^0-9.-]/g, '');
+    const number = parseFloat(cleanNumber);
+
+    if (isNaN(number)) return value; // Nếu không phải là số thì giữ nguyên giá trị gốc
+
+    // Format theo chuẩn vi-VN (phân cách hàng nghìn bằng dấu chấm)
+    return new Intl.NumberFormat('vi-VN').format(number);
+}
+
 function processMailMerge() {
     const fileInput = document.getElementById('excelFile');
     const statusDiv = document.getElementById('status');
+    const submitBtn = document.getElementById('submitBtn');
+
+    statusDiv.classList.remove('error');
 
     if (!fileInput.files.length) {
         alert('Vui lòng chọn file Excel trước!');
         return;
     }
-// Hàm chuyển đổi số/chuỗi số thành dạng tiền tệ Việt Nam (VD: 2500000 -> 2.500.000)
-function formatVND(value) {
-    if (!value || value === "...") return "...";
-    // Loại bỏ dấu chấm, dấu phẩy hoặc chữ nếu người dùng lỡ nhập trong Excel
-    const cleanNumber = string(value).replace(/[^0-9.-]/g, '');
-    const number = parseFloat(cleanNumber);
-    
-    if (isNaN(number)) return value; // Nếu không phải là số thì giữ nguyên
-    
-    // Format theo chuẩn vi-VN (phân cách hàng nghìn bằng dấu chấm)
-    return new Intl.NumberFormat('vi-VN').format(number);
-}
-        
+
+    submitBtn.disabled = true;
     statusDiv.innerText = "Đang xử lý dữ liệu...";
     const file = fileInput.files[0];
     const reader = new FileReader();
 
+    reader.onerror = function() {
+        statusDiv.classList.add('error');
+        statusDiv.innerText = "Lỗi: Không thể đọc file. Vui lòng kiểm tra lại file và thử lại.";
+        submitBtn.disabled = false;
+    };
+
     reader.onload = function(e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const customers = XLSX.utils.sheet_to_json(firstSheet);
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const customers = XLSX.utils.sheet_to_json(firstSheet);
 
-        if (customers.length === 0) {
-            statusDiv.innerText = "File Excel không có dữ liệu!";
-            return;
-        }
-
-        // Tự động lấy ngày tháng năm thực tế
-        const today = new Date();
-        const ngay = today.getDate();
-        const thang = today.getMonth() + 1;
-        const nam = today.getFullYear();
-        const thoi_gian = `Thành phố Hồ Chí Minh, ngày ${ngay} tháng ${thang} năm ${nam}`;
-
-        const docDefinition = {
-            content: []
-        };
-
-        customers.forEach((c, index) => {
-            // Lấy dữ liệu biến thiên từ Excel
-            const ho_ten = c.ho_ten || "...";
-            const dia_chi = c.dia_chi || "...";
-            const can_ho = c.can_ho || "...";
-            const hop_dong = c.hop_dong || "...";
-            const ngay_ky = c.ngay_ky || "...";
-            const ky_tien_nha = c.ky_tien_nha || "...";
-            const tien_nha = c.tien_nha || "0";
-            const ky_tien_dien = c.ky_tien_dien || "...";
-            const tien_dien = c.tien_dien || "0";
-            const ky_tien_nuoc = c.ky_tien_nuoc || "...";
-            const tien_nuoc = c.tien_nuoc || "0";
-            const ky_tien_rac = c.ky_tien_rac || "...";
-            const tien_rac = c.tien_rac || "0";
-            const tien_con_lai = c.tien_con_lai || "0";
-            const tien_tong = c.tien_tong || "0";
-            const so_tien_bang_chu = c.so_tien_bang_chu || "...";
-            const ma_khach_hang = c.ma_khach_hang || "...";
-
-            const tien_nha = formatVND(c.tien_nha);
-            const tien_dien = formatVND(c.tien_dien);
-            const tien_nuoc = formatVND(c.tien_nuoc);
-            const tien_rac = formatVND(c.tien_rac);
-            const tien_con_lai = formatVND(c.tien_con_lai);
-            const tien_tong = formatVND(c.tien_tong);
-            
-            // Cấu trúc nội dung PDF
-            docDefinition.content.push(
-                // Header Đơn vị
-                { text: 'TẬP ĐOÀN ĐẦU TƯ VÀ PHÁT TRIỂN CÔNG NGHIỆP BECAMEX – CTCP', style: 'companyName' },
-                { text: 'Ban thương mại – Tầng 17, tòa nhà mPlaza Saigon, 39 Lê Duẩn, Sài Gòn, Hồ Chí Minh', style: 'companyInfo' },
-                { text: 'Số điện thoại liên hệ: 02743.811.666 / Email liên hệ: noasxh@becamex.com.vn\n\n', style: 'companyInfo' },
-                
-                // Thời gian thực tế căn phải
-                { text: `${thoi_gian}\n\n`, style: 'dateStyle' },
-
-                // Kính gửi
-                { text: `Kính gửi: Ông/Bà ${ho_ten}`, style: 'recipient' },
-                { text: `Địa chỉ: ${dia_chi}\n\n`, style: 'recipientInfo' },
-
-                // Tiêu đề V/v
-                { text: `V/v: ĐỀ NGHỊ THANH TOÁN TIỀN THUÊ CĂN HỘ ${can_ho} - HỢP ĐỒNG SỐ ${hop_dong}\n\n`, style: 'subject' },
-
-                // Lời mở đầu
-                { text: `Kính thưa Ông/Bà,\n\n`, style: 'bodyText' },
-                { text: 'Trước hết, chúng tôi xin gửi lời chào trân trọng và lời cảm ơn chân thành đến Ông/Bà vì đã tin tưởng lựa chọn sử dụng dịch vụ nhà ở của chúng tôi trong thời gian qua.\n\n', style: 'bodyText' },
-                { text: `Căn cứ theo điều khoản quy định tại Hợp đồng thuê nhà ở số ${hop_dong} ký ngày ${ngay_ky}, chúng tôi xin thông báo đến Quý khách hàng về việc thanh toán tiền thuê căn hộ và các khoản chi phí sử dụng dịch vụ (điện, nước, tiền thu gom xử lý rác) như sau:\n\n`, style: 'bodyText' },
-
-                // Bảng tính toán chi phí
-                {
-                    table: {
-                        widths: ['10%', '60%', '30%'],
-                        body: [
-                            [
-                                { text: 'STT', bold: true, alignment: 'center' },
-                                { text: 'KHOẢN MỤC', bold: true, alignment: 'center' },
-                                { text: 'GIÁ TRỊ (ĐÃ GỒM VAT)', bold: true, alignment: 'center' }
-                            ],
-                            [{ text: '1', alignment: 'center' }, `Tiền thuê nhà ở tháng ${ky_tien_nha}`, { text: tien_nha, alignment: 'right' }],
-                            [{ text: '2', alignment: 'center' }, `Tiền điện tháng ${ky_tien_dien}`, { text: tien_dien, alignment: 'right' }],
-                            [{ text: '3', alignment: 'center' }, `Tiền nước kỳ ${ky_tien_nuoc}`, { text: tien_nuoc, alignment: 'right' }],
-                            [{ text: '4', alignment: 'center' }, `Tiền thu gom, xử lý rác ${ky_tien_rac}`, { text: tien_rac, alignment: 'right' }],
-                            [{ text: '5', alignment: 'center' }, 'Tiền thanh toán dư hoặc còn nợ tháng trước', { text: tien_con_lai, alignment: 'right' }],
-                            [
-                                { text: 'Tổng số tiền cần thanh toán', colSpan: 2, bold: true },
-                                {},
-                                { text: tien_tong, bold: true, alignment: 'right' }
-                            ]
-                        ]
-                    },
-                    margin: [0, 0, 0, 10]
-                },
-
-                // Số tiền bằng chữ
-                { text: `( Bằng chữ: ${so_tien_bang_chu} )\n\n`, style: 'bodyText', italic: true },
-
-                // Hướng dẫn thanh toán
-                { text: `Kính đề nghị Ông/Bà vui lòng hoàn tất thanh toán khoản chi phí trên trong tháng ${ky_tien_nha} bằng phương thức chuyển khoản vào tài khoản dưới đây:\n`, style: 'bodyText' },
-                { text: '+ Tên tài khoản: TẬP ĐOÀN ĐẦU TƯ VÀ PHÁT TRIỂN CÔNG NGHIỆP BECAMEX- CTCP', style: 'bankInfo' },
-                { text: '+ Số tài khoản: 6501639371', style: 'bankInfo' },
-                { text: '+ Ngân hàng: BIDV CHI NHÁNH BÌNH DƯƠNG', style: 'bankInfo' },
-                { text: `+ Nội dung chuyển khoản: ${ho_ten} ${can_ho} ${ma_khach_hang} Tiền thuê tháng ${ky_tien_nha}\n\n`, style: 'bankInfo' },
-
-                // Ghi chú và thông tin hỗ trợ
-                { text: 'Nếu Ông/Bà đã thực hiện thanh toán, xin vui lòng bỏ qua thư thông báo này.\n', style: 'bodyText' },
-                { text: 'Mọi thắc mắc hoặc cần hỗ trợ thêm, Ông/Bà vui lòng liên hệ Ban thương mại – Tập Đoàn Becamex (số điện thoại: 02743.811.666).\n\n', style: 'bodyText' },
-                { text: 'Trân trọng,\n\n\n\n\n\n', style: 'bodyText' },
-
-                // Chữ ký
-                { text: '_______________________', bold: false, style: 'bodyText' },
-                { text: 'Nguyễn Quang Triệu\n', bold: true, style: 'bodyText' },
-                { text: 'Phó Giám đốc Ban thương mại', bold: true, style: 'bodyText' },
-            );
-
-            // Ngắt trang giữa các thư
-            if (index < customers.length - 1) {
-                docDefinition.content.push({ text: '', pageBreak: 'after' });
+            if (customers.length === 0) {
+                statusDiv.classList.add('error');
+                statusDiv.innerText = "File Excel không có dữ liệu!";
+                submitBtn.disabled = false;
+                return;
             }
-        });
 
-        // Styles cấu hình định dạng font chữ & khoảng cách
-        docDefinition.styles = {
-            companyName: { fontSize: 10, bold: true },
-            companyInfo: { fontSize: 9, italic: true },
-            dateStyle: { fontSize: 10, italic: true, alignment: 'left' },
-            recipient: { fontSize: 11, bold: true },
-            recipientInfo: { fontSize: 9, italic: true },
-            subject: { fontSize: 12, bold: true, alignment: 'left'},
-            bodyText: { fontSize: 11, leading: 1.25 },
-            bankInfo: { fontSize: 10.5, bold: true, margin: [10, 2, 0, 2] }
-        };
+            // Kiểm tra các dòng thiếu thông tin bắt buộc (họ tên) để cảnh báo người dùng
+            const requiredField = 'ho_ten';
+            const missingRows = [];
+            customers.forEach((c, idx) => {
+                if (!c[requiredField] || String(c[requiredField]).trim() === '') {
+                    missingRows.push(idx + 2); // +2: bù dòng header + index bắt đầu từ 0
+                }
+            });
 
-        // Xuất file PDF
-        pdfMake.createPdf(docDefinition).download('Thong_Bao_De_Nghi_Thanh_Toan.pdf');
-        statusDiv.innerText = `Đã xuất thành công ${customers.length} thông báo!`;
+            // Tự động lấy ngày tháng năm thực tế
+            const today = new Date();
+            const ngay = today.getDate();
+            const thang = today.getMonth() + 1;
+            const nam = today.getFullYear();
+            const thoi_gian = `Thành phố Hồ Chí Minh, ngày ${ngay} tháng ${thang} năm ${nam}`;
+
+            const docDefinition = {
+                content: []
+            };
+
+            customers.forEach((c, index) => {
+                // Lấy dữ liệu biến thiên từ Excel (các trường văn bản)
+                const ho_ten = c.ho_ten || "...";
+                const dia_chi = c.dia_chi || "...";
+                const can_ho = c.can_ho || "...";
+                const hop_dong = c.hop_dong || "...";
+                const ngay_ky = c.ngay_ky || "...";
+                const ky_tien_nha = c.ky_tien_nha || "...";
+                const ky_tien_dien = c.ky_tien_dien || "...";
+                const ky_tien_nuoc = c.ky_tien_nuoc || "...";
+                const ky_tien_rac = c.ky_tien_rac || "...";
+                const so_tien_bang_chu = c.so_tien_bang_chu || "...";
+                const ma_khach_hang = c.ma_khach_hang || "...";
+
+                // Các trường tiền tệ - định dạng qua formatVND (chỉ khai báo 1 lần)
+                const tien_nha = formatVND(c.tien_nha);
+                const tien_dien = formatVND(c.tien_dien);
+                const tien_nuoc = formatVND(c.tien_nuoc);
+                const tien_rac = formatVND(c.tien_rac);
+                const tien_con_lai = formatVND(c.tien_con_lai);
+                const tien_tong = formatVND(c.tien_tong);
+
+                // Cấu trúc nội dung PDF
+                docDefinition.content.push(
+                    // Header Đơn vị
+                    { text: 'TẬP ĐOÀN ĐẦU TƯ VÀ PHÁT TRIỂN CÔNG NGHIỆP BECAMEX – CTCP', style: 'companyName' },
+                    { text: 'Ban thương mại – Tầng 17, tòa nhà mPlaza Saigon, 39 Lê Duẩn, Sài Gòn, Hồ Chí Minh', style: 'companyInfo' },
+                    { text: 'Số điện thoại liên hệ: 02743.811.666 / Email liên hệ: noasxh@becamex.com.vn\n\n', style: 'companyInfo' },
+
+                    // Thời gian thực tế căn phải
+                    { text: `${thoi_gian}\n\n`, style: 'dateStyle' },
+
+                    // Kính gửi
+                    { text: `Kính gửi: Ông/Bà ${ho_ten}`, style: 'recipient' },
+                    { text: `Địa chỉ: ${dia_chi}\n\n`, style: 'recipientInfo' },
+
+                    // Tiêu đề V/v
+                    { text: `V/v: ĐỀ NGHỊ THANH TOÁN TIỀN THUÊ CĂN HỘ ${can_ho} - HỢP ĐỒNG SỐ ${hop_dong}\n\n`, style: 'subject' },
+
+                    // Lời mở đầu
+                    { text: `Kính thưa Ông/Bà,\n\n`, style: 'bodyText' },
+                    { text: 'Trước hết, chúng tôi xin gửi lời chào trân trọng và lời cảm ơn chân thành đến Ông/Bà vì đã tin tưởng lựa chọn sử dụng dịch vụ nhà ở của chúng tôi trong thời gian qua.\n\n', style: 'bodyText' },
+                    { text: `Căn cứ theo điều khoản quy định tại Hợp đồng thuê nhà ở số ${hop_dong} ký ngày ${ngay_ky}, chúng tôi xin thông báo đến Quý khách hàng về việc thanh toán tiền thuê căn hộ và các khoản chi phí sử dụng dịch vụ (điện, nước, tiền thu gom xử lý rác) như sau:\n\n`, style: 'bodyText' },
+
+                    // Bảng tính toán chi phí
+                    {
+                        table: {
+                            widths: ['10%', '60%', '30%'],
+                            body: [
+                                [
+                                    { text: 'STT', bold: true, alignment: 'center' },
+                                    { text: 'KHOẢN MỤC', bold: true, alignment: 'center' },
+                                    { text: 'GIÁ TRỊ (ĐÃ GỒM VAT)', bold: true, alignment: 'center' }
+                                ],
+                                [{ text: '1', alignment: 'center' }, `Tiền thuê nhà ở tháng ${ky_tien_nha}`, { text: tien_nha, alignment: 'right' }],
+                                [{ text: '2', alignment: 'center' }, `Tiền điện tháng ${ky_tien_dien}`, { text: tien_dien, alignment: 'right' }],
+                                [{ text: '3', alignment: 'center' }, `Tiền nước kỳ ${ky_tien_nuoc}`, { text: tien_nuoc, alignment: 'right' }],
+                                [{ text: '4', alignment: 'center' }, `Tiền thu gom, xử lý rác ${ky_tien_rac}`, { text: tien_rac, alignment: 'right' }],
+                                [{ text: '5', alignment: 'center' }, 'Tiền thanh toán dư hoặc còn nợ tháng trước', { text: tien_con_lai, alignment: 'right' }],
+                                [
+                                    { text: 'Tổng số tiền cần thanh toán', colSpan: 2, bold: true },
+                                    {},
+                                    { text: tien_tong, bold: true, alignment: 'right' }
+                                ]
+                            ]
+                        },
+                        margin: [0, 0, 0, 10]
+                    },
+
+                    // Số tiền bằng chữ
+                    { text: `( Bằng chữ: ${so_tien_bang_chu} )\n\n`, style: 'bodyText', italic: true },
+
+                    // Hướng dẫn thanh toán
+                    { text: `Kính đề nghị Ông/Bà vui lòng hoàn tất thanh toán khoản chi phí trên trong tháng ${ky_tien_nha} bằng phương thức chuyển khoản vào tài khoản dưới đây:\n`, style: 'bodyText' },
+                    { text: '+ Tên tài khoản: TẬP ĐOÀN ĐẦU TƯ VÀ PHÁT TRIỂN CÔNG NGHIỆP BECAMEX- CTCP', style: 'bankInfo' },
+                    { text: '+ Số tài khoản: 6501639371', style: 'bankInfo' },
+                    { text: '+ Ngân hàng: BIDV CHI NHÁNH BÌNH DƯƠNG', style: 'bankInfo' },
+                    { text: `+ Nội dung chuyển khoản: ${ho_ten} ${can_ho} ${ma_khach_hang} Tiền thuê tháng ${ky_tien_nha}\n\n`, style: 'bankInfo' },
+
+                    // Ghi chú và thông tin hỗ trợ
+                    { text: 'Nếu Ông/Bà đã thực hiện thanh toán, xin vui lòng bỏ qua thư thông báo này.\n', style: 'bodyText' },
+                    { text: 'Mọi thắc mắc hoặc cần hỗ trợ thêm, Ông/Bà vui lòng liên hệ Ban thương mại – Tập Đoàn Becamex (số điện thoại: 02743.811.666).\n\n', style: 'bodyText' },
+                    { text: 'Trân trọng,\n\n\n\n\n\n', style: 'bodyText' },
+
+                    // Chữ ký
+                    { text: '_______________________', bold: false, style: 'bodyText' },
+                    { text: 'Nguyễn Quang Triệu\n', bold: true, style: 'bodyText' },
+                    { text: 'Phó Giám đốc Ban thương mại', bold: true, style: 'bodyText' }
+                );
+
+                // Ngắt trang giữa các thư
+                if (index < customers.length - 1) {
+                    docDefinition.content.push({ text: '', pageBreak: 'after' });
+                }
+            });
+
+            // Styles cấu hình định dạng font chữ & khoảng cách
+            docDefinition.styles = {
+                companyName: { fontSize: 10, bold: true },
+                companyInfo: { fontSize: 9, italic: true },
+                dateStyle: { fontSize: 10, italic: true, alignment: 'left' },
+                recipient: { fontSize: 11, bold: true },
+                recipientInfo: { fontSize: 9, italic: true },
+                subject: { fontSize: 12, bold: true, alignment: 'left' },
+                bodyText: { fontSize: 11, leading: 1.25 },
+                bankInfo: { fontSize: 10.5, bold: true, margin: [10, 2, 0, 2] }
+            };
+
+            // Xuất file PDF
+            pdfMake.createPdf(docDefinition).download('Thong_Bao_De_Nghi_Thanh_Toan.pdf');
+
+            let finalMsg = `Đã xuất thành công ${customers.length} thông báo!`;
+            if (missingRows.length > 0) {
+                finalMsg += `\nLưu ý: các dòng thiếu "${requiredField}" trong Excel: ${missingRows.join(', ')}`;
+            }
+            statusDiv.innerText = finalMsg;
+        } catch (err) {
+            statusDiv.classList.add('error');
+            statusDiv.innerText = "Lỗi xử lý dữ liệu: " + err.message + "\nVui lòng kiểm tra định dạng file Excel.";
+        } finally {
+            submitBtn.disabled = false;
+        }
     };
 
     reader.readAsArrayBuffer(file);
