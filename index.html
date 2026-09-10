@@ -29,7 +29,7 @@
     
     <div class="note">
         <b>Tên các cột cần có trong file Excel (chính xác theo mã):</b><br>
-        <code>Thoi_gian</code>, <code>ho_ten</code>, <code>dia_chi</code>, <code>can_ho</code>, <code>hop_dong</code>, <code>ngay_ky</code>, <code>ky_tien_nha</code>, <code>tien_nha</code>, <code>ky_tien_dien</code>, <code>tien_dien</code>, <code>ky_tien_nuoc</code>, <code>tien_nuoc</code>, <code>ky_tien_rac</code>, <code>tien_rac</code>, <code>tien_con_lai</code>, <code>tien_tong</code>, <code>so_tien_bang_chu</code>, <code>ma_khach_hang</code>
+        <code>ho_ten</code>, <code>dia_chi</code>, <code>can_ho</code>, <code>hop_dong</code>, <code>ngay_ky</code>, <code>ky_tien_nha</code>, <code>tien_nha</code>, <code>ky_tien_dien</code>, <code>tien_dien</code>, <code>ky_tien_nuoc</code>, <code>tien_nuoc</code>, <code>ky_tien_rac</code>, <code>tien_rac</code>, <code>tien_con_lai</code>, <code>tien_tong</code>, <code>so_tien_bang_chu</code>, <code>ma_khach_hang</code>
     </div>
 
     <div class="form-group">
@@ -67,13 +67,19 @@ function processMailMerge() {
             return;
         }
 
+        // Tự động lấy ngày tháng năm thực tế
+        const today = new Date();
+        const ngay = today.getDate();
+        const thang = today.getMonth() + 1;
+        const nam = today.getFullYear();
+        const thoi_gian = `Thành phố Hồ Chí Minh, ngày ${ngay} tháng ${thang} năm ${nam}`;
+
         const docDefinition = {
             content: []
         };
 
         customers.forEach((c, index) => {
-            // Lấy dữ liệu biến thiên từ Excel (nếu để trống sẽ hiển thị dấu ...)
-            const Thoi_gian = c.Thoi_gian || "...";
+            // Lấy dữ liệu biến thiên từ Excel
             const ho_ten = c.ho_ten || "...";
             const dia_chi = c.dia_chi || "...";
             const can_ho = c.can_ho || "...";
@@ -92,15 +98,15 @@ function processMailMerge() {
             const so_tien_bang_chu = c.so_tien_bang_chu || "...";
             const ma_khach_hang = c.ma_khach_hang || "...";
 
-            // Cấu trúc nội dung PDF chuẩn theo Mẫu Thông Báo
+            // Cấu trúc nội dung PDF
             docDefinition.content.push(
                 // Header Đơn vị
                 { text: 'TẬP ĐOÀN ĐẦU TƯ VÀ PHÁT TRIỂN CÔNG NGHIỆP BECAMEX – CTCP', style: 'companyName' },
                 { text: 'Ban thương mại – Tầng 17, tòa nhà mPlaza Saigon, 39 Lê Duẩn, Sài Gòn, Hồ Chí Minh', style: 'companyInfo' },
                 { text: 'Số điện thoại liên hệ: 02743.811.666 / Email liên hệ: noasxh@becamex.com.vn\n\n', style: 'companyInfo' },
                 
-                // Thời gian (căn phải)
-                { text: `${Thoi_gian}\n\n`, style: 'dateStyle' },
+                // Thời gian thực tế căn phải
+                { text: `${thoi_gian}\n\n`, style: 'dateStyle' },
 
                 // Kính gửi
                 { text: `Kính gửi: Ông/Bà ${ho_ten}`, style: 'recipient' },
@@ -157,11 +163,11 @@ function processMailMerge() {
                 // Chữ ký
                 {
                     columns: [
-                        { text: '' }, // Khung trống bên trái
+                        { text: '' },
                         {
                             stack: [
                                 { text: 'PGĐ Ban thương mại', bold: true, alignment: 'center' },
-                                { text: '\n\n\n\n' }, // Khoảng trống ký tên
+                                { text: '\n\n\n\n' },
                                 { text: 'NGUYỄN QUANG TRIỆU', bold: true, alignment: 'center' }
                             ]
                         }
@@ -169,7 +175,7 @@ function processMailMerge() {
                 }
             );
 
-            // Ngắt trang giữa các thư (trừ thư cuối)
+            // Ngắt trang giữa các thư
             if (index < customers.length - 1) {
                 docDefinition.content.push({ text: '', pageBreak: 'after' });
             }
