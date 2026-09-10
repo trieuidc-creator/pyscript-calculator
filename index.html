@@ -199,6 +199,7 @@ function processMailMerge() {
                     // Ghi chú và thông tin hỗ trợ
                     { text: 'Nếu Ông/Bà đã thực hiện thanh toán, xin vui lòng bỏ qua thư thông báo này.\n', style: 'bodyText' },
                     { text: 'Mọi thắc mắc hoặc cần hỗ trợ thêm, Ông/Bà vui lòng liên hệ Ban thương mại – Tập Đoàn Becamex (số điện thoại: 02743.811.666).\n\n', style: 'bodyText' },
+                    { text: 'Lưu ý quan trọng: từ 1/1/2027, Tập đoàn Becamex sẽ ngừng phát thông báo bằng giấy, thay bằng tin nhắn SMS và email. Đề nghị quý khách hàng kiểm tra lại thông tin của mình trên hợp đồng thuê căn hộ để kịp thời cập nhật số điện thoại và email (nếu cần). Thông tin liên hệ cập nhật số điện thoại và email: Mr. Triều (số điện thoại: 0975173878)', style: 'bodyText' }
                     { text: 'Trân trọng,\n\n\n\n\n\n', style: 'bodyText' },
 
                     // Chữ ký
@@ -218,11 +219,11 @@ function processMailMerge() {
                 companyName: { fontSize: 10, bold: true },
                 companyInfo: { fontSize: 9, italic: true },
                 dateStyle: { fontSize: 10, italic: true, alignment: 'left' },
-                recipient: { fontSize: 11, bold: true },
+                recipient: { fontSize: 10, bold: true },
                 recipientInfo: { fontSize: 9, italic: true },
                 subject: { fontSize: 12, bold: true, alignment: 'left' },
                 bodyText: { fontSize: 11, leading: 1.25 },
-                bankInfo: { fontSize: 10.5, bold: true, margin: [10, 2, 0, 2] }
+                bankInfo: { fontSize: 9, bold: true, margin: [10, 2, 0, 2] }
             };
 
             // Xuất file PDF
