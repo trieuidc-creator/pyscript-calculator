@@ -172,14 +172,14 @@ function processMailMerge() {
                                     { text: 'KHOẢN MỤC', bold: true, alignment: 'center' },
                                     { text: 'GIÁ TRỊ (ĐÃ GỒM VAT)', bold: true, alignment: 'center' }
                                 ],
-                                [{ text: '1', alignment: 'center' }, `Tiền thuê nhà ở tháng ${ky_tien_nha}`, { text: tien_nha, alignment: 'right' }],
+                                [{ text: '1', alignment: 'center' }, `Tiền thuê nhà ở tháng ${ky_tien_nha}`, { text: tien_nha & ' vnđ', alignment: 'right' }],
                                 [{ text: '2', alignment: 'center' }, `Tiền điện tháng ${ky_tien_dien}`, { text: tien_dien, alignment: 'right' }],
                                 [{ text: '3', alignment: 'center' }, `Tiền nước kỳ ${ky_tien_nuoc}`, { text: tien_nuoc, alignment: 'right' }],
                                 [{ text: '4', alignment: 'center' }, `Tiền thu gom, xử lý rác ${ky_tien_rac}`, { text: tien_rac, alignment: 'right' }],
                                 [{ text: '5', alignment: 'center' }, 'Tiền thanh toán còn nợ tháng trước', { text: tien_con_no, alignment: 'right' }],
                                 [{ text: '6', alignment: 'center' }, 'Tiền thanh toán còn dư tháng trước', { text: tien_con_du, alignment: 'right' }],
                                 [
-                                    { text: 'Tổng số tiền cần thanh toán', colSpan: 2, bold: true },
+                                    { text: 'Tổng số tiền cần thanh toán (1+2+3+4+5-6)', colSpan: 2, bold: true },
                                     {},
                                     { text: tien_tong, bold: true, alignment: 'right' }
                                 ]
