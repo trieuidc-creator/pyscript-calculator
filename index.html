@@ -3,47 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tính Lũy Thừa Python</title>
-    <!-- Nhúng PyScript -->
-    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
-    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+    <title>Tạo Thư Hàng Loạt (Mail Merge PDF)</title>
+    <!-- Thư viện đọc file Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Thư viện tạo file PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    
     <style>
-        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f4f9; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 300px; text-align: center; }
-        input { width: 90%; padding: 8px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; }
-        button { width: 95%; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #0056b3; }
-        #result { margin-top: 15px; font-weight: bold; color: #333; }
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f9; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        input[type="file"] { border: 1px solid #ccc; padding: 8px; width: 100%; box-sizing: border-box; }
+        button { background-color: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
+        button:hover { background-color: #218838; }
+        #status { margin-top: 15px; font-weight: bold; color: #007bff; text-align: center; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>Tính $a^b$ bằng Python</h2>
-        <input type="number" id="num_a" placeholder="Nhập số a">
-        <input type="number" id="num_b" placeholder="Nhập số b">
-        <button py-click="tinh_luy_thua">Tính toán</button>
-        <div id="result">Kết quả sẽ hiển thị ở đây</div>
+<div class="container">
+    <h2>Mail Merge - Tạo Thư PDF Hàng Loạt</h2>
+    <p>Tải lên file Excel có cột <b>HoTen</b> và <b>DiaChi</b> để xuất file PDF.</p>
+    
+    <div class="form-group">
+        <label>Chọn file Excel (.xlsx / .csv):</label>
+        <input type="file" id="excelFile" accept=".xlsx, .xls, .csv">
     </div>
 
-    <!-- Code Python xử lý -->
-    <script type="py">
-        from pyscript import document
+    <button onclick="processMailMerge()">Tạo và Tải File PDF</button>
 
-        def tinh_luy_thua(event):
-            val_a = document.querySelector("#num_a").value
-            val_b = document.querySelector("#num_b").value
-            
-            if val_a == "" or val_b == "":
-                document.querySelector("#result").innerText = "Vui lòng nhập đủ số a và b!"
-                return
+    <div id="status"></div>
+</div>
 
-            a = float(val_a)
-            b = float(val_b)
-            ket_qua = a ** b
-            
-            document.querySelector("#result").innerText = f"Kết quả: {a} ^ {b} = {ket_qua}"
-    </script>
+<script>
+function processMailMerge() {
+    const fileInput = document.getElementById('excelFile');
+    const statusDiv = document.getElementById('status');
+
+    if (!fileInput.files.length) {
+        alert('Vui lòng chọn file Excel trước!');
+        return;
+    }
+
+    statusDiv.innerText = "Đang xử lý dữ liệu...";
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const customers = XLSX.utils.sheet_to_json(firstSheet);
+
+        if (customers.length === 0) {
+            statusDiv.innerText = "File Excel không có dữ liệu!";
+            return;
+        }
+
+        // Định nghĩa nội dung tài liệu PDF chứa tất cả thư
+        const docDefinition = {
+            content: []
+        };
+
+        customers.forEach((customer, index) => {
+            const hoTen = customer.HoTen || "Khách hàng";
+            const diaChi = customer.DiaChi || "Chưa cập nhật";
+
+            // Thêm mẫu thư cho từng khách hàng
+            docDefinition.content.push(
+                { text: 'THƯ MỜI TRÂN TRỌNG', style: 'header' },
+                { text: `Kính gửi: ${hoTen}`, style: 'subHeader' },
+                { text: `Địa chỉ: ${diaChi}\n\n` },
+                { text: `Chúng tôi xin trân trọng kính mời ông/bà ${hoTen} tham dự sự kiện tri ân khách hàng thân thiết vào cuối tháng này.\n\n` },
+                { text: 'Trân trọng,\nBan Tổ Chức', alignment: 'right' }
+            );
+
+            // Ngắt trang giữa các thư (trừ thư cuối cùng)
+            if (index < customers.length - 1) {
+                docDefinition.content.push({ text: '', pageBreak: 'after' });
+            }
+        });
+
+        // Định kiểu văn bản
+        docDefinition.styles = {
+            header: { fontSize: 18, bold: true, alignment: 'center', margin: [0, 0, 0, 20] },
+            subHeader: { fontSize: 14, bold: true, margin: [0, 0, 0, 10] }
+        };
+
+        // Tạo file PDF và tải về
+        pdfMake.createPdf(docDefinition).download('Danh_Sach_Thu_Moi.pdf');
+        statusDiv.innerText = `Đã xuất thành công ${customers.length} thư!`;
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+</script>
 
 </body>
 </html>
