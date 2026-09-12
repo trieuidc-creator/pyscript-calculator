@@ -257,13 +257,13 @@ async function processMailMerge() {
                     // Thời gian thực tế căn phải
                     { text: `${thoi_gian}\n\n`, style: 'dateStyle' },
 
+                    // Tiêu đề
+                    { text: `THÔNG BÁO THANH TOÁN TIỀN THUÊ CĂN HỘ ${can_ho} - HỢP ĐỒNG SỐ ${hop_dong}\n\n`, style: 'subject', alignment: 'center'},
+
                     // Kính gửi
                     { text: `Kính gửi: Ông/Bà ${ho_ten}`, style: 'recipient' },
                     { text: `Địa chỉ: ${dia_chi}\n\n`, style: 'recipientInfo' },
-
-                    // Tiêu đề V/v
-                    { text: `V/v: ĐỀ NGHỊ THANH TOÁN TIỀN THUÊ CĂN HỘ ${can_ho} - HỢP ĐỒNG SỐ ${hop_dong}\n\n`, style: 'subject' },
-
+                    
                     // Lời mở đầu
                     { text: `Kính thưa Ông/Bà,\n\n`, style: 'bodyText' },
                     { text: 'Trước hết, chúng tôi xin gửi lời chào trân trọng và lời cảm ơn chân thành đến Ông/Bà vì đã tin tưởng lựa chọn sử dụng dịch vụ nhà ở của chúng tôi trong thời gian qua.\n\n', style: 'bodyText' },
@@ -299,7 +299,7 @@ async function processMailMerge() {
                     { text: `( Bằng chữ: ${so_tien_bang_chu} )\n\n`, style: 'bodyText', italic: true },
 
                     // Hướng dẫn thanh toán
-                    { text: `Kính đề nghị Ông/Bà vui lòng hoàn tất thanh toán khoản chi phí trên trong tháng ${ky_tien_nha} bằng phương thức chuyển khoản vào tài khoản dưới đây:\n`, style: 'bodyText' },
+                    { text: `Kính đề nghị Ông/Bà vui lòng hoàn tất thanh toán khoản chi phí trên trong vòng 15 ngày kể từ ngày của thông báo bằng phương thức chuyển khoản vào tài khoản dưới đây (khuyến nghị quét mã QR-Code):\n`, style: 'bodyText' },
 
                     // Bảng 2 cột: bên trái thông tin ngân hàng, bên phải mã QR
                     {
@@ -333,8 +333,8 @@ async function processMailMerge() {
                     // Ghi chú và thông tin hỗ trợ
                     { text: 'Nếu Ông/Bà đã thực hiện thanh toán, xin vui lòng bỏ qua thư thông báo này.\n', style: 'bodyText' },
                     { text: 'Mọi thắc mắc hoặc cần hỗ trợ thêm, Ông/Bà vui lòng liên hệ Ban thương mại – Tập Đoàn Becamex (số điện thoại: 02743.811.666).\n\n', style: 'bodyText' },
-                    { text: 'Lưu ý quan trọng: từ 1/1/2027, Tập đoàn Becamex sẽ ngừng phát thông báo bằng giấy, thay bằng tin nhắn SMS và email. Đề nghị quý khách hàng kiểm tra lại thông tin của mình trên hợp đồng thuê căn hộ để kịp thời cập nhật số điện thoại và email (nếu cần). Thông tin liên hệ cập nhật số điện thoại và email: Mr. Triều (số điện thoại: 0975173878)\n', style: 'bodyText' },
-                    { text: 'Trân trọng,\n\n\n\n\n\n', style: 'bodyText' },
+                    { text: 'Lưu ý quan trọng: từ 1/1/2027, Tập đoàn Becamex sẽ ngừng phát thông báo bằng giấy, thay bằng tin nhắn SMS và email. Đề nghị quý khách hàng kiểm tra lại thông tin của mình trên hợp đồng thuê căn hộ để kịp thời cập nhật số điện thoại và email (nếu cần). Thông tin liên hệ cập nhật số điện thoại và email: Mr. Triều (số điện thoại: 0975173878)\n', style: 'bodyText', bold: true},
+                    { text: 'Trân trọng,\n\n\n\n', style: 'bodyText' },
 
                     // Chữ ký
                     { text: '_______________________', bold: false, style: 'bodyText' },
