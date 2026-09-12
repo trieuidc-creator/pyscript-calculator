@@ -274,20 +274,20 @@ async function processMailMerge() {
                             widths: ['10%', '60%', '30%'],
                             body: [
                                 [
-                                    { text: 'STT', bold: true, alignment: 'center' },
-                                    { text: 'KHOẢN MỤC', bold: true, alignment: 'center' },
-                                    { text: 'GIÁ TRỊ (ĐÃ GỒM VAT)', bold: true, alignment: 'center' }
+                                    { text: 'STT', bold: true, alignment: 'center', fontSize: 10 },
+                                    { text: 'KHOẢN MỤC', bold: true, alignment: 'center', fontSize: 10 },
+                                    { text: 'GIÁ TRỊ (ĐÃ GỒM VAT)', bold: true, alignment: 'center', fontSize: 10 }
                                 ],
-                                [{ text: '1', alignment: 'center' }, `Tiền thuê nhà ở tháng ${ky_tien_nha}`, { text: tien_nha + ' vnđ', alignment: 'right' }],
-                                [{ text: '2', alignment: 'center' }, `Tiền điện tháng ${ky_tien_dien}`, { text: tien_dien + ' vnđ', alignment: 'right' }],
-                                [{ text: '3', alignment: 'center' }, `Tiền nước kỳ ${ky_tien_nuoc}`, { text: tien_nuoc + ' vnđ', alignment: 'right' }],
-                                [{ text: '4', alignment: 'center' }, `Tiền thu gom, xử lý rác ${ky_tien_rac}`, { text: tien_rac + ' vnđ', alignment: 'right' }],
-                                [{ text: '5', alignment: 'center' }, 'Tiền thanh toán còn nợ tháng trước', { text: tien_con_no + ' vnđ', alignment: 'right' }],
-                                [{ text: '6', alignment: 'center' }, 'Tiền thanh toán còn dư tháng trước', { text: tien_con_du + ' vnđ', alignment: 'right' }],
+                                [{ text: '1', alignment: 'center', fontSize: 10 }, { text: `Tiền thuê nhà ở tháng ${ky_tien_nha}`, fontSize: 10 }, { text: tien_nha + ' vnđ', alignment: 'right', fontSize: 10 }],
+                                [{ text: '2', alignment: 'center', fontSize: 10 }, { text: `Tiền điện tháng ${ky_tien_dien}`, fontSize: 10 }, { text: tien_dien + ' vnđ', alignment: 'right', fontSize: 10 }],
+                                [{ text: '3', alignment: 'center', fontSize: 10 }, { text: `Tiền nước kỳ ${ky_tien_nuoc}`, fontSize: 10 }, { text: tien_nuoc + ' vnđ', alignment: 'right', fontSize: 10 }],
+                                [{ text: '4', alignment: 'center', fontSize: 10 }, { text: `Tiền thu gom, xử lý rác ${ky_tien_rac}`, fontSize: 10 }, { text: tien_rac + ' vnđ', alignment: 'right', fontSize: 10 }],
+                                [{ text: '5', alignment: 'center', fontSize: 10 }, { text: 'Tiền thanh toán còn nợ tháng trước', fontSize: 10 }, { text: tien_con_no + ' vnđ', alignment: 'right', fontSize: 10 }],
+                                [{ text: '6', alignment: 'center', fontSize: 10 }, { text: 'Tiền thanh toán còn dư tháng trước', fontSize: 10 }, { text: tien_con_du + ' vnđ', alignment: 'right', fontSize: 10 }],
                                 [
-                                    { text: 'Tổng số tiền cần thanh toán (1+2+3+4+5-6)', colSpan: 2, bold: true },
+                                    { text: 'Tổng số tiền cần thanh toán (1+2+3+4+5-6)', colSpan: 2, bold: true, fontSize: 10 },
                                     {},
-                                    { text: tien_tong + ' vnđ', bold: true, alignment: 'right' }
+                                    { text: tien_tong + ' vnđ', bold: true, alignment: 'right', fontSize: 10 }
                                 ]
                             ]
                         },
