@@ -187,27 +187,10 @@ async function processMailMerge() {
 
                 // Cấu trúc nội dung PDF
                 docDefinition.content.push(
-                    // Header Đơn vị (kèm mã QR bên phải)
-                    {
-                        columns: [
-                            {
-                                width: '*',
-                                stack: [
-                                    { text: 'TẬP ĐOÀN ĐẦU TƯ VÀ PHÁT TRIỂN CÔNG NGHIỆP BECAMEX – CTCP', style: 'companyName' },
-                                    { text: 'Ban thương mại – Tầng 17, tòa nhà mPlaza Saigon, 39 Lê Duẩn, Sài Gòn, Hồ Chí Minh', style: 'companyInfo' },
-                                    { text: 'Số điện thoại liên hệ: 02743.811.666 / Email liên hệ: noasxh@becamex.com.vn', style: 'companyInfo' }
-                                ]
-                            },
-                            {
-                                width: 70,
-                                stack: [
-                                    { image: 'qrCode', width: 60, height: 60, alignment: 'center' },
-                                    { text: 'becamex.com.vn', fontSize: 7, alignment: 'center' }
-                                ]
-                            }
-                        ],
-                        margin: [0, 0, 0, 10]
-                    },
+                    // Header Đơn vị
+                    { text: 'TẬP ĐOÀN ĐẦU TƯ VÀ PHÁT TRIỂN CÔNG NGHIỆP BECAMEX – CTCP', style: 'companyName' },
+                    { text: 'Ban thương mại – Tầng 17, tòa nhà mPlaza Saigon, 39 Lê Duẩn, Sài Gòn, Hồ Chí Minh', style: 'companyInfo' },
+                    { text: 'Số điện thoại liên hệ: 02743.811.666 / Email liên hệ: noasxh@becamex.com.vn\n\n', style: 'companyInfo' },
 
                     // Thời gian thực tế căn phải
                     { text: `${thoi_gian}\n\n`, style: 'dateStyle' },
@@ -255,10 +238,35 @@ async function processMailMerge() {
 
                     // Hướng dẫn thanh toán
                     { text: `Kính đề nghị Ông/Bà vui lòng hoàn tất thanh toán khoản chi phí trên trong tháng ${ky_tien_nha} bằng phương thức chuyển khoản vào tài khoản dưới đây:\n`, style: 'bodyText' },
-                    { text: '+ Tên tài khoản: TẬP ĐOÀN ĐẦU TƯ VÀ PHÁT TRIỂN CÔNG NGHIỆP BECAMEX- CTCP', style: 'bankInfo' },
-                    { text: '+ Số tài khoản: 6501639371', style: 'bankInfo' },
-                    { text: '+ Ngân hàng: BIDV CHI NHÁNH BÌNH DƯƠNG', style: 'bankInfo' },
-                    { text: `+ Nội dung chuyển khoản: ${ho_ten} ${can_ho} ${ma_khach_hang} Tiền thuê tháng ${ky_tien_nha}\n\n`, style: 'bankInfo' },
+
+                    // Bảng 2 cột: bên trái thông tin ngân hàng, bên phải mã QR
+                    {
+                        table: {
+                            widths: ['70%', '30%'],
+                            body: [
+                                [
+                                    {
+                                        stack: [
+                                            { text: '+ Tên tài khoản: TẬP ĐOÀN ĐẦU TƯ VÀ PHÁT TRIỂN CÔNG NGHIỆP BECAMEX- CTCP', style: 'bankInfo' },
+                                            { text: '+ Số tài khoản: 6501639371', style: 'bankInfo' },
+                                            { text: '+ Ngân hàng: BIDV CHI NHÁNH BÌNH DƯƠNG', style: 'bankInfo' },
+                                            { text: `+ Nội dung chuyển khoản: ${ho_ten} ${can_ho} ${ma_khach_hang} Tiền thuê tháng ${ky_tien_nha}`, style: 'bankInfo' }
+                                        ]
+                                    },
+                                    {
+                                        stack: [
+                                            { image: 'qrCode', width: 70, height: 70, alignment: 'center' },
+                                            { text: 'becamex.com.vn', fontSize: 7, alignment: 'center' }
+                                        ],
+                                        alignment: 'center'
+                                    }
+                                ]
+                            ]
+                        },
+                        layout: 'noBorders',
+                        margin: [0, 0, 0, 10]
+                    },
+
 
                     // Ghi chú và thông tin hỗ trợ
                     { text: 'Nếu Ông/Bà đã thực hiện thanh toán, xin vui lòng bỏ qua thư thông báo này.\n', style: 'bodyText' },
