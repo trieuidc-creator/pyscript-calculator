@@ -258,7 +258,7 @@ async function processMailMerge() {
                     { text: `${thoi_gian}\n\n`, style: 'dateStyle' },
 
                     // Tiêu đề
-                    { text: `THÔNG BÁO THANH TOÁN TIỀN THUÊ CĂN HỘ ${can_ho} - HỢP ĐỒNG SỐ ${hop_dong}\n\n`, style: 'subject', alignment: 'center'},
+                    { text: `THÔNG BÁO: THANH TOÁN TIỀN THUÊ CĂN HỘ ${can_ho} - HỢP ĐỒNG SỐ ${hop_dong}\n\n`, style: 'subject'},
 
                     // Kính gửi
                     { text: `Kính gửi: Ông/Bà ${ho_ten}`, style: 'recipient' },
@@ -324,7 +324,7 @@ async function processMailMerge() {
                                 ]
                             ]
                         },
-                        //layout: 'noBorders',
+                        layout: 'noBorders',
                         margin: [0, 0, 0, 10]
                     },
 
@@ -350,12 +350,12 @@ async function processMailMerge() {
             // Styles cấu hình định dạng font chữ & khoảng cách
             docDefinition.styles = {
                 companyName: { fontSize: 10, bold: true },
-                companyInfo: { fontSize: 9, italic: true },
+                companyInfo: { fontSize: 8, italic: true },
                 dateStyle: { fontSize: 10, italic: true, alignment: 'left' },
                 recipient: { fontSize: 10, bold: true },
-                recipientInfo: { fontSize: 9, italic: true },
+                recipientInfo: { fontSize: 8, italic: true },
                 subject: { fontSize: 12, bold: true, alignment: 'left' },
-                bodyText: { fontSize: 11, leading: 1.25 },
+                bodyText: { fontSize: 10, leading: 1.25 },
                 bankInfo: { fontSize: 9, bold: true, margin: [10, 2, 0, 2] }
             };
 
