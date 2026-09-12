@@ -65,6 +65,56 @@ function formatVND(value) {
     return new Intl.NumberFormat('vi-VN').format(number);
 }
 
+// Bỏ dấu tiếng Việt và chuyển thành chữ in hoa (nội dung chuyển khoản trên QR ngân hàng
+// nên dùng ký tự không dấu để tương thích với nhiều app ngân hàng)
+function removeVietnameseTones(str) {
+    str = String(str);
+    str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    str = str.replace(/đ/g, 'd').replace(/Đ/g, 'D');
+    return str;
+}
+
+// Ghép 1 field theo chuẩn TLV (Tag-Length-Value) dùng trong EMVCo QR / VietQR
+function tlv(id, value) {
+    const length = String(value.length).padStart(2, '0');
+    return `${id}${length}${value}`;
+}
+
+// Tính CRC-16/CCITT-FALSE (poly 0x1021, init 0xFFFF) - bắt buộc theo chuẩn EMVCo, trả về 4 ký tự hex viết hoa
+function crc16ccitt(str) {
+    let crc = 0xFFFF;
+    for (let i = 0; i < str.length; i++) {
+        crc ^= (str.charCodeAt(i) << 8);
+        for (let j = 0; j < 8; j++) {
+            crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+            crc &= 0xFFFF;
+        }
+    }
+    return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+
+// Tạo chuỗi raw VietQR (chuẩn EMVCo, dùng chung bởi hầu hết app ngân hàng tại VN) để chuyển khoản tới BIDV
+// bankBin: mã BIN ngân hàng theo NAPAS (BIDV = 970418), accountNumber: số tài khoản thụ hưởng
+function buildVietQRPayload({ bankBin, accountNumber, amount, purpose }) {
+    const guid = tlv('00', 'A000000727'); // GUID của NAPAS
+    const beneficiaryInfo = tlv('00', bankBin) + tlv('01', accountNumber);
+    const bankSubField = tlv('01', beneficiaryInfo);
+    const serviceCode = tlv('02', 'QRIBFTTA'); // chuyển khoản tới số tài khoản
+    const merchantAccountInfo = tlv('38', guid + bankSubField + serviceCode);
+
+    const payloadFormat = tlv('00', '01');
+    const initMethod = tlv('01', '12'); // 12 = QR động (có sẵn số tiền/nội dung)
+    const currency = tlv('53', '704'); // VND
+    const amountField = amount ? tlv('54', String(amount)) : '';
+    const country = tlv('58', 'VN');
+    const additionalData = tlv('62', tlv('08', purpose));
+
+    let payload = payloadFormat + initMethod + merchantAccountInfo + currency + amountField + country + additionalData;
+    payload += '6304'; // tag + length của CRC, giá trị sẽ được tính ngay sau
+    const crc = crc16ccitt(payload);
+    return payload + crc;
+}
+
 // Tạo mã QR trỏ tới link đã cho và trả về dạng ảnh base64 (data URL) để nhúng vào PDF
 function generateQRCodeDataUrl(link) {
     return new Promise((resolve, reject) => {
@@ -148,21 +198,15 @@ async function processMailMerge() {
             const nam = today.getFullYear();
             const thoi_gian = `Thành phố Hồ Chí Minh, ngày ${ngay} tháng ${thang} năm ${nam}`;
 
-            // Tạo mã QR trỏ tới website Becamex (dùng chung cho tất cả các thư)
-            statusDiv.innerText = "Đang tạo mã QR...";
-            const qrLink = "https://becamex.com.vn";
-            const qrDataUrl = await generateQRCodeDataUrl(qrLink);
-
-            statusDiv.innerText = "Đang tạo file PDF...";
+            statusDiv.innerText = "Đang tạo mã QR thanh toán...";
 
             const docDefinition = {
                 content: [],
-                images: {
-                    qrCode: qrDataUrl
-                }
+                images: {}
             };
 
-            customers.forEach((c, index) => {
+            for (let index = 0; index < customers.length; index++) {
+                const c = customers[index];
                 // Lấy dữ liệu biến thiên từ Excel (các trường văn bản)
                 const ho_ten = c.ho_ten || "...";
                 const dia_chi = c.dia_chi || "...";
@@ -184,6 +228,24 @@ async function processMailMerge() {
                 const tien_con_no = formatVND(c.tien_con_no);
                 const tien_con_du = formatVND(c.tien_con_du);
                 const tien_tong = formatVND(c.tien_tong);
+
+                // Số tiền dạng số nguyên thô (không dấu chấm phân cách) để nhúng vào QR
+                const soTienRaw = Math.round(parseFloat(String(c.tien_tong || 0).replace(/[^0-9.-]/g, ''))) || 0;
+
+                // Nội dung chuyển khoản ghép từ các field, bỏ dấu để tương thích nhiều app ngân hàng
+                const noiDungChuyenKhoan = removeVietnameseTones(
+                    `${ho_ten} ${can_ho} ${ma_khach_hang} ${ky_tien_nha}`
+                ).toUpperCase().replace(/\s+/g, ' ').trim();
+
+                // Tạo chuỗi VietQR raw để app ngân hàng đọc và tự điền thông tin chuyển khoản
+                const vietQRPayload = buildVietQRPayload({
+                    bankBin: '970418', // Mã BIN của BIDV theo NAPAS
+                    accountNumber: '6501639371',
+                    amount: soTienRaw,
+                    purpose: noiDungChuyenKhoan
+                });
+                const qrImageKey = `qrCode_${index}`;
+                docDefinition.images[qrImageKey] = await generateQRCodeDataUrl(vietQRPayload);
 
                 // Cấu trúc nội dung PDF
                 docDefinition.content.push(
@@ -255,8 +317,8 @@ async function processMailMerge() {
                                     },
                                     {
                                         stack: [
-                                            { image: 'qrCode', width: 70, height: 70, alignment: 'center' },
-                                            { text: 'becamex.com.vn', fontSize: 7, alignment: 'center' }
+                                            { image: qrImageKey, width: 70, height: 70, alignment: 'center' },
+                                            { text: 'Quét mã QR thanh toán (được khuyến nghị)', fontSize: 7, bold: true, alignment: 'center' }
                                         ],
                                         alignment: 'center'
                                     }
@@ -284,7 +346,7 @@ async function processMailMerge() {
                 if (index < customers.length - 1) {
                     docDefinition.content.push({ text: '', pageBreak: 'after' });
                 }
-            });
+            }
 
             // Styles cấu hình định dạng font chữ & khoảng cách
             docDefinition.styles = {
