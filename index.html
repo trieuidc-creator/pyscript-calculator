@@ -9,6 +9,8 @@
     <!-- Thư viện tạo file PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <!-- Thư viện tạo mã QR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f9; }
@@ -42,6 +44,9 @@
     <button id="submitBtn" onclick="processMailMerge()">Tạo và Tải File PDF</button>
 
     <div id="status"></div>
+
+    <!-- Vùng ẩn dùng để dựng mã QR (không hiển thị cho người dùng) -->
+    <div id="qrcode-holder" style="display:none;"></div>
 </div>
 
 <script>
@@ -60,7 +65,37 @@ function formatVND(value) {
     return new Intl.NumberFormat('vi-VN').format(number);
 }
 
-function processMailMerge() {
+// Tạo mã QR trỏ tới link đã cho và trả về dạng ảnh base64 (data URL) để nhúng vào PDF
+function generateQRCodeDataUrl(link) {
+    return new Promise((resolve, reject) => {
+        try {
+            const holder = document.getElementById('qrcode-holder');
+            holder.innerHTML = ''; // xóa QR cũ nếu có
+
+            // Thư viện qrcodejs mặc định vẽ ra <canvas> (hoặc <table> nếu trình duyệt không hỗ trợ canvas)
+            new QRCode(holder, {
+                text: link,
+                width: 200,
+                height: 200,
+                correctLevel: QRCode.CorrectLevel.M
+            });
+
+            // qrcodejs vẽ đồng bộ, nhưng đợi 1 nhịp để chắc chắn canvas đã có trong DOM
+            setTimeout(() => {
+                const canvas = holder.querySelector('canvas');
+                if (!canvas) {
+                    reject(new Error('Không tạo được mã QR (trình duyệt không hỗ trợ canvas).'));
+                    return;
+                }
+                resolve(canvas.toDataURL('image/png'));
+            }, 50);
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+
+async function processMailMerge() {
     const fileInput = document.getElementById('excelFile');
     const statusDiv = document.getElementById('status');
     const submitBtn = document.getElementById('submitBtn');
@@ -83,7 +118,7 @@ function processMailMerge() {
         submitBtn.disabled = false;
     };
 
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
@@ -113,8 +148,18 @@ function processMailMerge() {
             const nam = today.getFullYear();
             const thoi_gian = `Thành phố Hồ Chí Minh, ngày ${ngay} tháng ${thang} năm ${nam}`;
 
+            // Tạo mã QR trỏ tới website Becamex (dùng chung cho tất cả các thư)
+            statusDiv.innerText = "Đang tạo mã QR...";
+            const qrLink = "https://becamex.com.vn";
+            const qrDataUrl = await generateQRCodeDataUrl(qrLink);
+
+            statusDiv.innerText = "Đang tạo file PDF...";
+
             const docDefinition = {
-                content: []
+                content: [],
+                images: {
+                    qrCode: qrDataUrl
+                }
             };
 
             customers.forEach((c, index) => {
@@ -142,10 +187,27 @@ function processMailMerge() {
 
                 // Cấu trúc nội dung PDF
                 docDefinition.content.push(
-                    // Header Đơn vị
-                    { text: 'TẬP ĐOÀN ĐẦU TƯ VÀ PHÁT TRIỂN CÔNG NGHIỆP BECAMEX – CTCP', style: 'companyName' },
-                    { text: 'Ban thương mại – Tầng 17, tòa nhà mPlaza Saigon, 39 Lê Duẩn, Sài Gòn, Hồ Chí Minh', style: 'companyInfo' },
-                    { text: 'Số điện thoại liên hệ: 02743.811.666 / Email liên hệ: noasxh@becamex.com.vn\n\n', style: 'companyInfo' },
+                    // Header Đơn vị (kèm mã QR bên phải)
+                    {
+                        columns: [
+                            {
+                                width: '*',
+                                stack: [
+                                    { text: 'TẬP ĐOÀN ĐẦU TƯ VÀ PHÁT TRIỂN CÔNG NGHIỆP BECAMEX – CTCP', style: 'companyName' },
+                                    { text: 'Ban thương mại – Tầng 17, tòa nhà mPlaza Saigon, 39 Lê Duẩn, Sài Gòn, Hồ Chí Minh', style: 'companyInfo' },
+                                    { text: 'Số điện thoại liên hệ: 02743.811.666 / Email liên hệ: noasxh@becamex.com.vn', style: 'companyInfo' }
+                                ]
+                            },
+                            {
+                                width: 70,
+                                stack: [
+                                    { image: 'qrCode', width: 60, height: 60, alignment: 'center' },
+                                    { text: 'becamex.com.vn', fontSize: 7, alignment: 'center' }
+                                ]
+                            }
+                        ],
+                        margin: [0, 0, 0, 10]
+                    },
 
                     // Thời gian thực tế căn phải
                     { text: `${thoi_gian}\n\n`, style: 'dateStyle' },
@@ -172,16 +234,16 @@ function processMailMerge() {
                                     { text: 'KHOẢN MỤC', bold: true, alignment: 'center' },
                                     { text: 'GIÁ TRỊ (ĐÃ GỒM VAT)', bold: true, alignment: 'center' }
                                 ],
-                                [{ text: '1', alignment: 'center' }, `Tiền thuê nhà ở tháng ${ky_tien_nha}`, { text: tien_nha & ' vnđ', alignment: 'right' }],
-                                [{ text: '2', alignment: 'center' }, `Tiền điện tháng ${ky_tien_dien}`, { text: tien_dien, alignment: 'right' }],
-                                [{ text: '3', alignment: 'center' }, `Tiền nước kỳ ${ky_tien_nuoc}`, { text: tien_nuoc, alignment: 'right' }],
-                                [{ text: '4', alignment: 'center' }, `Tiền thu gom, xử lý rác ${ky_tien_rac}`, { text: tien_rac, alignment: 'right' }],
-                                [{ text: '5', alignment: 'center' }, 'Tiền thanh toán còn nợ tháng trước', { text: tien_con_no, alignment: 'right' }],
-                                [{ text: '6', alignment: 'center' }, 'Tiền thanh toán còn dư tháng trước', { text: tien_con_du, alignment: 'right' }],
+                                [{ text: '1', alignment: 'center' }, `Tiền thuê nhà ở tháng ${ky_tien_nha}`, { text: tien_nha + ' vnđ', alignment: 'right' }],
+                                [{ text: '2', alignment: 'center' }, `Tiền điện tháng ${ky_tien_dien}`, { text: tien_dien + ' vnđ', alignment: 'right' }],
+                                [{ text: '3', alignment: 'center' }, `Tiền nước kỳ ${ky_tien_nuoc}`, { text: tien_nuoc + ' vnđ', alignment: 'right' }],
+                                [{ text: '4', alignment: 'center' }, `Tiền thu gom, xử lý rác ${ky_tien_rac}`, { text: tien_rac + ' vnđ', alignment: 'right' }],
+                                [{ text: '5', alignment: 'center' }, 'Tiền thanh toán còn nợ tháng trước', { text: tien_con_no + ' vnđ', alignment: 'right' }],
+                                [{ text: '6', alignment: 'center' }, 'Tiền thanh toán còn dư tháng trước', { text: tien_con_du + ' vnđ', alignment: 'right' }],
                                 [
                                     { text: 'Tổng số tiền cần thanh toán (1+2+3+4+5-6)', colSpan: 2, bold: true },
                                     {},
-                                    { text: tien_tong, bold: true, alignment: 'right' }
+                                    { text: tien_tong + ' vnđ', bold: true, alignment: 'right' }
                                 ]
                             ]
                         },
