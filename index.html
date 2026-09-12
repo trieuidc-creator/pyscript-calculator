@@ -265,9 +265,8 @@ async function processMailMerge() {
                     { text: `Địa chỉ: ${dia_chi}\n\n`, style: 'recipientInfo' },
                     
                     // Lời mở đầu
-                    { text: `Kính thưa Ông/Bà,\n\n`, style: 'bodyText' },
                     { text: 'Trước hết, chúng tôi xin gửi lời chào trân trọng và lời cảm ơn chân thành đến Ông/Bà vì đã tin tưởng lựa chọn sử dụng dịch vụ nhà ở của chúng tôi trong thời gian qua.\n\n', style: 'bodyText' },
-                    { text: `Căn cứ theo điều khoản quy định tại Hợp đồng thuê nhà ở số ${hop_dong} ký ngày ${ngay_ky}, chúng tôi xin thông báo đến Quý khách hàng về việc thanh toán tiền thuê căn hộ và các khoản chi phí sử dụng dịch vụ (điện, nước, tiền thu gom xử lý rác) như sau:\n\n`, style: 'bodyText' },
+                    { text: `Căn cứ theo điều khoản quy định tại Hợp đồng thuê nhà ở số ${hop_dong} ký ngày ${ngay_ky}, chúng tôi xin thông báo đến Quý khách hàng về việc thanh toán tiền thuê căn hộ và các khoản chi phí sử dụng dịch vụ (điện, nước, xử lý rác, ...) như sau:\n`, style: 'bodyText' },
 
                     // Bảng tính toán chi phí
                     {
@@ -299,12 +298,12 @@ async function processMailMerge() {
                     { text: `( Bằng chữ: ${so_tien_bang_chu} )\n\n`, style: 'bodyText', italic: true },
 
                     // Hướng dẫn thanh toán
-                    { text: `Kính đề nghị Ông/Bà vui lòng hoàn tất thanh toán khoản chi phí trên trong vòng 15 ngày kể từ ngày của thông báo bằng phương thức chuyển khoản vào tài khoản dưới đây (khuyến nghị quét mã QR-Code):\n`, style: 'bodyText' },
+                    { text: `Kính đề nghị Ông/Bà vui lòng hoàn tất thanh toán khoản chi phí trên trong vòng 15 ngày kể từ ngày của thông báo bằng phương thức chuyển khoản vào tài khoản dưới đây (khuyến nghị quét mã QR-Code):\n\n`, style: 'bodyText' },
 
                     // Bảng 2 cột: bên trái thông tin ngân hàng, bên phải mã QR
                     {
                         table: {
-                            widths: ['70%', '30%'],
+                            widths: ['60%', '40%'],
                             body: [
                                 [
                                     {
@@ -317,7 +316,7 @@ async function processMailMerge() {
                                     },
                                     {
                                         stack: [
-                                            { image: qrImageKey, width: 70, height: 70, alignment: 'center' },
+                                            { image: qrImageKey, width: 100, height: 100, alignment: 'center' },
                                             { text: 'Quét mã QR thanh toán (được khuyến nghị)', fontSize: 7, bold: true, alignment: 'center' }
                                         ],
                                         alignment: 'center'
@@ -325,7 +324,7 @@ async function processMailMerge() {
                                 ]
                             ]
                         },
-                        layout: 'noBorders',
+                        //layout: 'noBorders',
                         margin: [0, 0, 0, 10]
                     },
 
